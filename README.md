@@ -2,6 +2,12 @@
 
 A beautiful, responsive single-page web application that provides quick access to your favorite websites. Features a modern design with smooth animations, search functionality, and category filtering.
 
+## 🌐 Live Demo
+
+Visit the live application: [Website Shortcuts Hub](https://YOUR_USERNAME.github.io/website-shortcuts-hub/)
+
+> **Note**: Replace `YOUR_USERNAME` with your actual GitHub username in the URL above.
+
 ## ✨ Features
 
 - **Sleek Modern Design**: Beautiful gradient background with glassmorphism effects
