@@ -1,0 +1,43 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="30" fill="url(#gradient1)" stroke="url(#gradient2)" stroke-width="2"/>
+  
+  <!-- Rocket Icon -->
+  <path d="M32 12L36 20H28L32 12Z" fill="#ffffff" opacity="0.9"/>
+  <ellipse cx="32" cy="22" rx="6" ry="3" fill="#00d4ff" opacity="0.8"/>
+  <rect x="29" y="22" width="6" height="16" rx="3" fill="#ffffff" opacity="0.9"/>
+  <circle cx="32" cy="30" r="2" fill="#00ff88"/>
+  
+  <!-- Network Nodes -->
+  <circle cx="20" cy="45" r="3" fill="#00ff88" opacity="0.7"/>
+  <circle cx="44" cy="45" r="3" fill="#00d4ff" opacity="0.7"/>
+  <circle cx="16" cy="32" r="2" fill="#00ff88" opacity="0.6"/>
+  <circle cx="48" cy="32" r="2" fill="#00d4ff" opacity="0.6"/>
+  
+  <!-- Connection Lines -->
+  <line x1="20" y1="45" x2="32" y2="38" stroke="#00ff88" stroke-width="1.5" opacity="0.4"/>
+  <line x1="44" y1="45" x2="32" y2="38" stroke="#00d4ff" stroke-width="1.5" opacity="0.4"/>
+  <line x1="16" y1="32" x2="29" y2="30" stroke="#00ff88" stroke-width="1" opacity="0.3"/>
+  <line x1="48" y1="32" x2="35" y2="30" stroke="#00d4ff" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Flame/Exhaust -->
+  <path d="M29 38L32 45L35 38" fill="url(#flameGradient)" opacity="0.8"/>
+  
+  <!-- Definitions -->
+  <defs>
+    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:0.9" />
+      <stop offset="50%" style="stop-color:#16213e;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#0f3460;stop-opacity:0.9" />
+    </linearGradient>
+    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0.8" />
+    </linearGradient>
+    <linearGradient id="flameGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:0.9" />
+      <stop offset="50%" style="stop-color:#f39c12;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#e74c3c;stop-opacity:0.7" />
+    </linearGradient>
+  </defs>
+</svg>

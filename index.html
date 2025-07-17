@@ -11,11 +11,37 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
                 rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+        <!-- Favicon -->
+        <link rel="icon" type="image/svg+xml" href="Assets/favicon.svg">
+        <link rel="icon" type="image/png" href="Assets/favicon.svg">
 </head>
 
 <body>
         <div class="container">
                 <header class="header">
+                        <div class="header-controls">
+                                <div class="keyboard-help-container">
+                                        <button class="keyboard-help" id="keyboardHelp" aria-label="Keyboard shortcuts">
+                                                <i class="fas fa-keyboard"></i>
+                                        </button>
+                                        <div class="keyboard-help-tooltip" id="keyboardTooltip">
+                                                <h4>Keyboard Shortcuts</h4>
+                                                <div class="shortcut-item"><kbd>/</kbd> Focus search</div>
+                                                <div class="shortcut-item"><kbd>↑↓←→</kbd> Navigate cards</div>
+                                                <div class="shortcut-item"><kbd>Enter</kbd> Open website</div>
+                                                <div class="shortcut-item"><kbd>Home/End</kbd> First/Last card</div>
+                                        </div>
+                                </div>
+                                <div class="theme-toggle-container">
+                                        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                                                <i class="fas fa-sun" id="themeIcon"></i>
+                                        </button>
+                                </div>
+                        </div>
+                        <div class="logo-container">
+                                <img src="Assets/logo.svg" alt="Website Shortcuts Hub Logo" class="logo">
+                        </div>
                         <h1 class="title">
                                 <i class="fas fa-rocket"></i>
                                 Website Shortcuts Hub
@@ -80,6 +106,35 @@
                                 </div>
                         </section>
 
+                        <section class="management-panel">
+                                <div class="management-tabs">
+                                        <button class="management-tab" id="addWebsiteTab">
+                                                <i class="fas fa-plus"></i>
+                                                Add Website
+                                        </button>
+                                        <button class="management-tab" id="addCategoryTab">
+                                                <i class="fas fa-tag"></i>
+                                                Add Category
+                                        </button>
+                                        <button class="management-tab" id="editCustomTab">
+                                                <i class="fas fa-edit"></i>
+                                                Edit Custom
+                                        </button>
+                                        <button class="management-tab" id="clearDataTab">
+                                                <i class="fas fa-trash"></i>
+                                                Clear Data
+                                        </button>
+                                        <button class="management-tab" id="statsTab">
+                                                <i class="fas fa-chart-bar"></i>
+                                                Statistics
+                                        </button>
+                                        <button class="management-tab" id="importExportTab">
+                                                <i class="fas fa-download"></i>
+                                                Import/Export
+                                        </button>
+                                </div>
+                        </section>
+
                         <section class="shortcuts-grid" id="shortcutsGrid">
                                 <!-- Website shortcuts will be dynamically generated here -->
                         </section>
@@ -95,6 +150,252 @@
                 <div class="loading-spinner">
                         <div class="spinner"></div>
                         <p>Loading your shortcuts...</p>
+                </div>
+        </div>
+
+        <!-- Modal Dialogs -->
+
+        <!-- Add Website Modal -->
+        <div class="modal" id="addWebsiteModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Add New Website</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <form id="addWebsiteForm">
+                                        <div class="form-group">
+                                                <label for="websiteName">Website Name:</label>
+                                                <input type="text" id="websiteName" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="websiteUrl">Website URL:</label>
+                                                <input type="url" id="websiteUrl" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="websiteDescription">Description:</label>
+                                                <input type="text" id="websiteDescription" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="websiteIcon">Icon URL (optional):</label>
+                                                <input type="text" id="websiteIcon"
+                                                        placeholder="https://example.com/icon.png">
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="websiteCategory">Category:</label>
+                                                <select id="websiteCategory">
+                                                        <option value="other">Other</option>
+                                                </select>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="websiteColor">Color:</label>
+                                                <input type="color" id="websiteColor" value="#00ff88">
+                                        </div>
+                                        <div class="form-actions">
+                                                <button type="submit" class="btn-primary">Add Website</button>
+                                                <button type="button" class="btn-secondary modal-close">Cancel</button>
+                                        </div>
+                                </form>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Add Category Modal -->
+        <div class="modal" id="addCategoryModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Add New Category</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <form id="addCategoryForm">
+                                        <div class="form-group">
+                                                <label for="categoryName">Category Name:</label>
+                                                <input type="text" id="categoryName" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="categoryColor">Color:</label>
+                                                <input type="color" id="categoryColor" value="#00ff88">
+                                        </div>
+                                        <div class="form-actions">
+                                                <button type="submit" class="btn-primary">Add Category</button>
+                                                <button type="button" class="btn-secondary modal-close">Cancel</button>
+                                        </div>
+                                </form>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Statistics Modal -->
+        <div class="modal" id="statsModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Usage Statistics</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <div class="stats-section">
+                                        <h4>Most Visited Sites</h4>
+                                        <div id="mostVisitedList"></div>
+                                </div>
+                                <div class="stats-section">
+                                        <h4>Category Usage</h4>
+                                        <div id="categoryUsageList"></div>
+                                </div>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Import/Export Modal -->
+        <div class="modal" id="importExportModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Import/Export Data</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <div class="import-export-section">
+                                        <h4>Export Your Data</h4>
+                                        <p>Download your custom websites, categories, and usage statistics.</p>
+                                        <button id="exportBtn" class="btn-primary">
+                                                <i class="fas fa-download"></i>
+                                                Export Data
+                                        </button>
+                                </div>
+                                <div class="import-export-section">
+                                        <h4>Import Data</h4>
+                                        <p>Upload a previously exported data file.</p>
+                                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                                        <button id="importBtn" class="btn-secondary">
+                                                <i class="fas fa-upload"></i>
+                                                Import Data
+                                        </button>
+                                </div>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Edit Custom Content Modal -->
+        <div class="modal" id="editCustomModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Edit Custom Content</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <div class="edit-sections">
+                                        <div class="edit-section">
+                                                <h4>Custom Categories</h4>
+                                                <div id="customCategoriesList"></div>
+                                        </div>
+                                        <div class="edit-section">
+                                                <h4>Custom Websites</h4>
+                                                <div id="customWebsitesList"></div>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Edit Category Modal -->
+        <div class="modal" id="editCategoryModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Edit Category</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <form id="editCategoryForm">
+                                        <input type="hidden" id="editCategoryId">
+                                        <div class="form-group">
+                                                <label for="editCategoryName">Category Name:</label>
+                                                <input type="text" id="editCategoryName" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="editCategoryColor">Color:</label>
+                                                <input type="color" id="editCategoryColor">
+                                        </div>
+                                        <div class="form-actions">
+                                                <button type="submit" class="btn-primary">Update Category</button>
+                                                <button type="button" class="btn-secondary modal-close">Cancel</button>
+                                        </div>
+                                </form>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Edit Website Modal -->
+        <div class="modal" id="editWebsiteModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Edit Website</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <form id="editWebsiteForm">
+                                        <input type="hidden" id="editWebsiteId">
+                                        <div class="form-group">
+                                                <label for="editWebsiteName">Website Name:</label>
+                                                <input type="text" id="editWebsiteName" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="editWebsiteUrl">Website URL:</label>
+                                                <input type="url" id="editWebsiteUrl" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="editWebsiteDescription">Description:</label>
+                                                <input type="text" id="editWebsiteDescription" required>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="editWebsiteIcon">Icon URL (optional):</label>
+                                                <input type="text" id="editWebsiteIcon">
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="editWebsiteCategory">Category:</label>
+                                                <select id="editWebsiteCategory">
+                                                        <option value="other">Other</option>
+                                                </select>
+                                        </div>
+                                        <div class="form-group">
+                                                <label for="editWebsiteColor">Color:</label>
+                                                <input type="color" id="editWebsiteColor">
+                                        </div>
+                                        <div class="form-actions">
+                                                <button type="submit" class="btn-primary">Update Website</button>
+                                                <button type="button" class="btn-secondary modal-close">Cancel</button>
+                                        </div>
+                                </form>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Clear Data Modal -->
+        <div class="modal" id="clearDataModal">
+                <div class="modal-content">
+                        <div class="modal-header">
+                                <h3>Clear Data</h3>
+                                <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                                <div class="clear-data-section">
+                                        <h4>What would you like to clear?</h4>
+                                        <div class="clear-options">
+                                                <button class="btn-warning" id="clearStatsBtn">
+                                                        <i class="fas fa-chart-bar"></i>
+                                                        Clear Usage Statistics
+                                                </button>
+                                                <button class="btn-danger" id="clearAllCustomBtn">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                        Clear All Custom Content
+                                                </button>
+                                        </div>
+                                        <p class="warning-text">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                Warning: This action cannot be undone. Consider exporting your data
+                                                first.
+                                        </p>
+                                </div>
+                        </div>
                 </div>
         </div>
 

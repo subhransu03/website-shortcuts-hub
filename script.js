@@ -1369,23 +1369,1117 @@ const searchInput = document.getElementById('searchInput');
 const clearSearch = document.getElementById('clearSearch');
 const categoryTabs = document.querySelectorAll('.category-tab');
 const loadingOverlay = document.getElementById('loadingOverlay');
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const keyboardHelp = document.getElementById('keyboardHelp');
+const keyboardTooltip = document.getElementById('keyboardTooltip');
 
 // State
 let currentCategory = 'all';
 let currentSearchTerm = '';
+let currentTheme = localStorage.getItem('theme') || 'dark';
+let focusedCardIndex = -1;
+let visibleCards = [];
+
+// New functionality state
+let usageStats = JSON.parse(localStorage.getItem('usageStats') || '{}');
+let customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+let customWebsites = JSON.parse(localStorage.getItem('customWebsites') || '[]');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function () {
+        // Initialize theme
+        initializeTheme();
+
+        // Initialize background
+        initializeBackground();
+
         // Simulate loading
         setTimeout(() => {
                 loadingOverlay.classList.add('hidden');
                 renderShortcuts();
                 setupEventListeners();
+
+                // Initialize new features
+                initializeNewFeatures();
+                addNewKeyboardShortcuts();
+                updateKeyboardHelp();
         }, 1500);
 });
 
+// Theme Management
+function initializeTheme() {
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        updateThemeIcon();
+}
+
+function toggleTheme() {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        localStorage.setItem('theme', currentTheme);
+        updateThemeIcon();
+
+        // Add a smooth transition effect
+        document.body.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+                document.body.style.transition = '';
+        }, 300);
+}
+
+function updateThemeIcon() {
+        const icon = themeIcon;
+        if (currentTheme === 'dark') {
+                icon.className = 'fas fa-sun';
+                icon.style.color = '#fbbf24'; // Warm yellow for sun
+        } else {
+                icon.className = 'fas fa-moon';
+                icon.style.color = '#6366f1'; // Modern purple for moon
+        }
+}
+
+// Background Management
+let currentBackground = localStorage.getItem('background') || 'default';
+let backgroundAnimation = null;
+let particleSystem = null;
+
+const backgroundTypes = {
+        default: 'Default Gradient',
+        particles: 'Animated Particles',
+        geometric: 'Geometric Patterns',
+        waves: 'Flowing Waves',
+        matrix: 'Matrix Rain',
+        stars: 'Starfield',
+        bubbles: 'Floating Bubbles'
+};
+
+function initializeBackground() {
+        createBackgroundControls();
+        setBackground(currentBackground);
+}
+
+function createBackgroundControls() {
+        // Create background selector container
+        const bgControlsContainer = document.createElement('div');
+        bgControlsContainer.className = 'background-controls-container';
+
+        // Create background toggle button
+        const bgToggle = document.createElement('button');
+        bgToggle.className = 'background-toggle';
+        bgToggle.innerHTML = '<i class="fas fa-palette"></i>';
+        bgToggle.setAttribute('aria-label', 'Change background');
+
+        // Create background selector dropdown
+        const bgSelector = document.createElement('div');
+        bgSelector.className = 'background-selector';
+        bgSelector.style.cssText = `
+                position: absolute;
+                top: 60px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--card-bg);
+                backdrop-filter: blur(15px);
+                border: 1px solid var(--border-color);
+                border-radius: 15px;
+                padding: 15px;
+                min-width: 200px;
+                box-shadow: 0 8px 32px var(--shadow-color);
+                opacity: 0;
+                visibility: hidden;
+                transform: translateX(-50%) translateY(-10px);
+                transition: all 0.3s ease;
+                z-index: 1002;
+        `;
+
+        // Add background options
+        Object.entries(backgroundTypes).forEach(([key, name]) => {
+                const option = document.createElement('div');
+                option.className = 'background-option';
+                option.textContent = name;
+                option.dataset.background = key;
+                option.style.cssText = `
+                        padding: 10px 15px;
+                        margin: 5px 0;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        color: var(--text-secondary);
+                        text-align: center;
+                        font-size: 0.9rem;
+                `;
+
+                if (key === currentBackground) {
+                        option.style.cssText += `
+                                background: var(--accent-primary);
+                                color: #1a1a2e;
+                                font-weight: 600;
+                        `;
+                }
+
+                option.addEventListener('click', () => {
+                        setBackground(key);
+                        updateBackgroundSelector();
+                        hideBgSelector();
+                });
+
+                option.addEventListener('mouseenter', () => {
+                        if (key !== currentBackground) {
+                                option.style.background = 'var(--border-color)';
+                                option.style.color = 'var(--accent-primary)';
+                        }
+                });
+
+                option.addEventListener('mouseleave', () => {
+                        if (key !== currentBackground) {
+                                option.style.background = 'transparent';
+                                option.style.color = 'var(--text-secondary)';
+                        }
+                });
+
+                bgSelector.appendChild(option);
+        });
+
+        function showBgSelector() {
+                bgSelector.style.opacity = '1';
+                bgSelector.style.visibility = 'visible';
+                bgSelector.style.transform = 'translateX(-50%) translateY(0)';
+        }
+
+        function hideBgSelector() {
+                bgSelector.style.opacity = '0';
+                bgSelector.style.visibility = 'hidden';
+                bgSelector.style.transform = 'translateX(-50%) translateY(-10px)';
+        }
+
+        function updateBackgroundSelector() {
+                const options = bgSelector.querySelectorAll('.background-option');
+                options.forEach(option => {
+                        const key = option.dataset.background;
+                        if (key === currentBackground) {
+                                option.style.cssText += `
+                                        background: var(--accent-primary);
+                                        color: #1a1a2e;
+                                        font-weight: 600;
+                                `;
+                        } else {
+                                option.style.cssText = `
+                                        padding: 10px 15px;
+                                        margin: 5px 0;
+                                        border-radius: 8px;
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                        color: var(--text-secondary);
+                                        text-align: center;
+                                        font-size: 0.9rem;
+                                        background: transparent;
+                                `;
+                        }
+                });
+        }
+
+        bgToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (bgSelector.style.opacity === '1') {
+                        hideBgSelector();
+                } else {
+                        showBgSelector();
+                }
+        });
+
+        // Hide selector when clicking outside
+        document.addEventListener('click', (e) => {
+                if (!bgControlsContainer.contains(e.target)) {
+                        hideBgSelector();
+                }
+        });
+
+        bgControlsContainer.appendChild(bgToggle);
+        bgControlsContainer.appendChild(bgSelector);
+        document.querySelector('.header-controls').appendChild(bgControlsContainer);
+}
+
+function setBackground(type) {
+        currentBackground = type;
+        localStorage.setItem('background', type);
+
+        // Clear existing background
+        clearBackground();
+
+        // Set new background
+        switch (type) {
+                case 'particles':
+                        createParticleSystem();
+                        break;
+                case 'geometric':
+                        createGeometricPattern();
+                        break;
+                case 'waves':
+                        createWaveAnimation();
+                        break;
+                case 'matrix':
+                        createMatrixRain();
+                        break;
+                case 'stars':
+                        createStarfield();
+                        break;
+                case 'bubbles':
+                        createBubbleSystem();
+                        break;
+                default:
+                        // Keep default gradient
+                        break;
+        }
+}
+
+function clearBackground() {
+        // Stop existing animations
+        if (backgroundAnimation) {
+                cancelAnimationFrame(backgroundAnimation);
+                backgroundAnimation = null;
+        }
+
+        // Remove existing background elements
+        const existingBg = document.querySelector('.background-canvas');
+        if (existingBg) {
+                existingBg.remove();
+        }
+
+        // Reset particle system
+        particleSystem = null;
+}
+
+function createBackgroundCanvas() {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'background-canvas';
+        canvas.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: -1;
+                opacity: 0.6;
+        `;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        document.body.appendChild(canvas);
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+        });
+
+        return canvas;
+}
+
+function createParticleSystem() {
+        const canvas = createBackgroundCanvas();
+        const ctx = canvas.getContext('2d');
+
+        const particles = [];
+        const particleCount = 80;
+
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        size: Math.random() * 3 + 1,
+                        opacity: Math.random() * 0.6 + 0.2,
+                        hue: Math.random() * 60 + 160 // Blue-green range
+                });
+        }
+
+        function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach((particle, index) => {
+                        // Update position
+                        particle.x += particle.vx;
+                        particle.y += particle.vy;
+
+                        // Bounce off edges
+                        if (particle.x <= 0 || particle.x >= canvas.width) particle.vx *= -1;
+                        if (particle.y <= 0 || particle.y >= canvas.height) particle.vy *= -1;
+
+                        // Draw particle
+                        ctx.save();
+                        ctx.globalAlpha = particle.opacity;
+                        ctx.fillStyle = `hsl(${particle.hue}, 70%, 60%)`;
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = `hsl(${particle.hue}, 70%, 60%)`;
+                        ctx.beginPath();
+                        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+
+                        // Draw connections
+                        particles.slice(index + 1).forEach(otherParticle => {
+                                const dx = particle.x - otherParticle.x;
+                                const dy = particle.y - otherParticle.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                                if (distance < 120) {
+                                        ctx.save();
+                                        ctx.globalAlpha = (120 - distance) / 120 * 0.3;
+                                        ctx.strokeStyle = `hsl(${particle.hue}, 70%, 60%)`;
+                                        ctx.lineWidth = 1;
+                                        ctx.beginPath();
+                                        ctx.moveTo(particle.x, particle.y);
+                                        ctx.lineTo(otherParticle.x, otherParticle.y);
+                                        ctx.stroke();
+                                        ctx.restore();
+                                }
+                        });
+                });
+
+                backgroundAnimation = requestAnimationFrame(animateParticles);
+        }
+
+        animateParticles();
+}
+
+function createGeometricPattern() {
+        const canvas = createBackgroundCanvas();
+        const ctx = canvas.getContext('2d');
+
+        const shapes = [];
+        const shapeCount = 25;
+
+        // Initialize shapes
+        for (let i = 0; i < shapeCount; i++) {
+                shapes.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: Math.random() * 50 + 20,
+                        rotation: Math.random() * Math.PI * 2,
+                        rotationSpeed: (Math.random() - 0.5) * 0.02,
+                        type: Math.floor(Math.random() * 3), // 0: triangle, 1: square, 2: hexagon
+                        hue: Math.random() * 360,
+                        opacity: Math.random() * 0.4 + 0.1,
+                        pulseSpeed: Math.random() * 0.02 + 0.01
+                });
+        }
+
+        function drawTriangle(ctx, x, y, size, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+                ctx.beginPath();
+                ctx.moveTo(0, -size / 2);
+                ctx.lineTo(-size / 2, size / 2);
+                ctx.lineTo(size / 2, size / 2);
+                ctx.closePath();
+                ctx.restore();
+        }
+
+        function drawSquare(ctx, x, y, size, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+                ctx.rect(-size / 2, -size / 2, size, size);
+                ctx.restore();
+        }
+
+        function drawHexagon(ctx, x, y, size, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                        const angle = i * Math.PI / 3;
+                        const x = size / 2 * Math.cos(angle);
+                        const y = size / 2 * Math.sin(angle);
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.restore();
+        }
+
+        let time = 0;
+
+        function animateShapes() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                time += 0.016;
+
+                shapes.forEach(shape => {
+                        shape.rotation += shape.rotationSpeed;
+
+                        // Pulsing effect
+                        const pulse = Math.sin(time * shape.pulseSpeed) * 0.3 + 1;
+                        const currentSize = shape.size * pulse;
+
+                        ctx.save();
+                        ctx.globalAlpha = shape.opacity;
+                        ctx.strokeStyle = `hsl(${shape.hue}, 70%, 60%)`;
+                        ctx.lineWidth = 2;
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = `hsl(${shape.hue}, 70%, 60%)`;
+
+                        ctx.beginPath();
+                        switch (shape.type) {
+                                case 0:
+                                        drawTriangle(ctx, shape.x, shape.y, currentSize, shape.rotation);
+                                        break;
+                                case 1:
+                                        drawSquare(ctx, shape.x, shape.y, currentSize, shape.rotation);
+                                        break;
+                                case 2:
+                                        drawHexagon(ctx, shape.x, shape.y, currentSize, shape.rotation);
+                                        break;
+                        }
+                        ctx.stroke();
+                        ctx.restore();
+                });
+
+                backgroundAnimation = requestAnimationFrame(animateShapes);
+        }
+
+        animateShapes();
+}
+
+function createWaveAnimation() {
+        const canvas = createBackgroundCanvas();
+        const ctx = canvas.getContext('2d');
+
+        let time = 0;
+
+        function animateWaves() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                time += 0.01;
+
+                const waveCount = 5;
+                for (let i = 0; i < waveCount; i++) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.3 - i * 0.05;
+                        ctx.strokeStyle = `hsl(${200 + i * 20}, 70%, 60%)`;
+                        ctx.lineWidth = 2;
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = `hsl(${200 + i * 20}, 70%, 60%)`;
+
+                        ctx.beginPath();
+                        for (let x = 0; x < canvas.width; x += 5) {
+                                const y = canvas.height / 2 +
+                                        Math.sin((x * 0.01) + (time * 2) + (i * 0.5)) * 50 +
+                                        Math.sin((x * 0.005) + (time * 1.5) + (i * 0.3)) * 30;
+
+                                if (x === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+                        ctx.restore();
+                }
+
+                backgroundAnimation = requestAnimationFrame(animateWaves);
+        }
+
+        animateWaves();
+}
+
+function createMatrixRain() {
+        const canvas = createBackgroundCanvas();
+        const ctx = canvas.getContext('2d');
+
+        const fontSize = 14;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = new Array(columns).fill(1);
+        const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+
+        function animateMatrix() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#00ff88';
+                ctx.font = `${fontSize}px monospace`;
+
+                for (let i = 0; i < drops.length; i++) {
+                        const char = chars[Math.floor(Math.random() * chars.length)];
+                        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+                        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                                drops[i] = 0;
+                        }
+                        drops[i]++;
+                }
+
+                backgroundAnimation = requestAnimationFrame(animateMatrix);
+        }
+
+        animateMatrix();
+}
+
+function createStarfield() {
+        const canvas = createBackgroundCanvas();
+        const ctx = canvas.getContext('2d');
+
+        const stars = [];
+        const starCount = 200;
+
+        for (let i = 0; i < starCount; i++) {
+                stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        z: Math.random() * 1000,
+                        pz: 0
+                });
+        }
+
+        function animateStars() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                stars.forEach(star => {
+                        star.pz = star.z;
+                        star.z -= 5;
+
+                        if (star.z <= 0) {
+                                star.x = Math.random() * canvas.width;
+                                star.y = Math.random() * canvas.height;
+                                star.z = 1000;
+                                star.pz = star.z;
+                        }
+
+                        const sx = (star.x - centerX) * (200 / star.z) + centerX;
+                        const sy = (star.y - centerY) * (200 / star.z) + centerY;
+                        const psx = (star.x - centerX) * (200 / star.pz) + centerX;
+                        const psy = (star.y - centerY) * (200 / star.pz) + centerY;
+
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 200 / star.z;
+                        ctx.beginPath();
+                        ctx.moveTo(psx, psy);
+                        ctx.lineTo(sx, sy);
+                        ctx.stroke();
+                });
+
+                backgroundAnimation = requestAnimationFrame(animateStars);
+        }
+
+        animateStars();
+}
+
+function createBubbleSystem() {
+        const canvas = createBackgroundCanvas();
+        const ctx = canvas.getContext('2d');
+
+        const bubbles = [];
+        const bubbleCount = 30;
+
+        for (let i = 0; i < bubbleCount; i++) {
+                bubbles.push({
+                        x: Math.random() * canvas.width,
+                        y: canvas.height + Math.random() * 100,
+                        size: Math.random() * 40 + 10,
+                        speed: Math.random() * 2 + 0.5,
+                        opacity: Math.random() * 0.5 + 0.2,
+                        hue: Math.random() * 60 + 180,
+                        wobble: Math.random() * 0.02 + 0.01,
+                        wobbleOffset: Math.random() * Math.PI * 2
+                });
+        }
+
+        let time = 0;
+
+        function animateBubbles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                time += 0.016;
+
+                bubbles.forEach((bubble, index) => {
+                        bubble.y -= bubble.speed;
+                        bubble.x += Math.sin(time * bubble.wobble + bubble.wobbleOffset) * 2;
+
+                        if (bubble.y < -bubble.size) {
+                                bubble.y = canvas.height + bubble.size;
+                                bubble.x = Math.random() * canvas.width;
+                        }
+
+                        // Create gradient
+                        const gradient = ctx.createRadialGradient(
+                                bubble.x, bubble.y, 0,
+                                bubble.x, bubble.y, bubble.size
+                        );
+                        gradient.addColorStop(0, `hsla(${bubble.hue}, 70%, 80%, ${bubble.opacity})`);
+                        gradient.addColorStop(0.7, `hsla(${bubble.hue}, 70%, 60%, ${bubble.opacity * 0.5})`);
+                        gradient.addColorStop(1, `hsla(${bubble.hue}, 70%, 40%, 0)`);
+
+                        ctx.save();
+                        ctx.fillStyle = gradient;
+                        ctx.beginPath();
+                        ctx.arc(bubble.x, bubble.y, bubble.size, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Add highlight
+                        ctx.fillStyle = `hsla(${bubble.hue}, 70%, 90%, ${bubble.opacity * 0.3})`;
+                        ctx.beginPath();
+                        ctx.arc(bubble.x - bubble.size * 0.3, bubble.y - bubble.size * 0.3, bubble.size * 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                });
+
+                backgroundAnimation = requestAnimationFrame(animateBubbles);
+        }
+
+        animateBubbles();
+}
+
+function cycleBackground() {
+        const backgroundKeys = Object.keys(backgroundTypes);
+        const currentIndex = backgroundKeys.indexOf(currentBackground);
+        const nextIndex = (currentIndex + 1) % backgroundKeys.length;
+        const nextBackground = backgroundKeys[nextIndex];
+
+        setBackground(nextBackground);
+
+        // Update the background selector if it exists
+        const backgroundOptions = document.querySelectorAll('.background-option');
+        backgroundOptions.forEach(option => {
+                const key = option.dataset.background;
+                if (key === currentBackground) {
+                        option.style.cssText += `
+                                background: var(--accent-primary);
+                                color: #1a1a2e;
+                                font-weight: 600;
+                        `;
+                } else {
+                        option.style.cssText = `
+                                padding: 10px 15px;
+                                margin: 5px 0;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                color: var(--text-secondary);
+                                text-align: center;
+                                font-size: 0.9rem;
+                                background: transparent;
+                        `;
+                }
+        });
+
+        // Show a brief notification
+        showBackgroundNotification(backgroundTypes[nextBackground]);
+}
+
+function showBackgroundNotification(backgroundName) {
+        // Remove existing notification
+        const existingNotification = document.querySelector('.background-notification');
+        if (existingNotification) {
+                existingNotification.remove();
+        }
+
+        const notification = document.createElement('div');
+        notification.className = 'background-notification';
+        notification.textContent = `Background: ${backgroundName}`;
+        notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--card-bg);
+                backdrop-filter: blur(15px);
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                padding: 12px 20px;
+                color: var(--accent-primary);
+                font-weight: 500;
+                box-shadow: 0 4px 15px var(--shadow-color);
+                z-index: 1001;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+        `;
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+        }, 10);
+
+        // Animate out
+        setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                        if (notification.parentNode) {
+                                notification.remove();
+                        }
+                }, 300);
+        }, 2000);
+}
+
+// ========================
+// USAGE STATISTICS FUNCTIONALITY
+// ========================
+function updateUsageStats(website) {
+        if (!usageStats[website.url]) {
+                usageStats[website.url] = {
+                        name: website.name,
+                        category: website.category,
+                        visits: 0,
+                        lastVisited: null
+                };
+        }
+
+        usageStats[website.url].visits++;
+        usageStats[website.url].lastVisited = new Date().toISOString();
+
+        // Update category stats
+        if (!usageStats.categories) {
+                usageStats.categories = {};
+        }
+        if (!usageStats.categories[website.category]) {
+                usageStats.categories[website.category] = 0;
+        }
+        usageStats.categories[website.category]++;
+
+        localStorage.setItem('usageStats', JSON.stringify(usageStats));
+}
+
+function getMostVisitedSites(limit = 10) {
+        return Object.entries(usageStats)
+                .filter(([key]) => key !== 'categories')
+                .map(([url, stats]) => ({ url, ...stats }))
+                .sort((a, b) => b.visits - a.visits)
+                .slice(0, limit);
+}
+
+function getMostUsedCategories() {
+        if (!usageStats.categories) return [];
+        return Object.entries(usageStats.categories)
+                .sort(([, a], [, b]) => b - a)
+                .map(([category, count]) => ({ category, count }));
+}
+
+// ========================
+// CUSTOM CATEGORIES FUNCTIONALITY
+// ========================
+function addCustomCategory(name, color = '#00ff88') {
+        const category = {
+                id: Date.now().toString(),
+                name: name.toLowerCase(),
+                displayName: name,
+                color: color,
+                createdAt: new Date().toISOString()
+        };
+
+        customCategories.push(category);
+        localStorage.setItem('customCategories', JSON.stringify(customCategories));
+        return category;
+}
+
+function removeCustomCategory(categoryId) {
+        customCategories = customCategories.filter(cat => cat.id !== categoryId);
+        // Also remove websites in this category
+        customWebsites = customWebsites.filter(site => site.categoryId !== categoryId);
+        localStorage.setItem('customCategories', JSON.stringify(customCategories));
+        localStorage.setItem('customWebsites', JSON.stringify(customWebsites));
+}
+
+function addCustomWebsite(website, categoryId = null) {
+        const customSite = {
+                id: Date.now().toString(),
+                ...website,
+                categoryId: categoryId,
+                isCustom: true,
+                createdAt: new Date().toISOString()
+        };
+
+        customWebsites.push(customSite);
+        localStorage.setItem('customWebsites', JSON.stringify(customWebsites));
+        return customSite;
+}
+
+function removeCustomWebsite(websiteId) {
+        customWebsites = customWebsites.filter(site => site.id !== websiteId);
+        localStorage.setItem('customWebsites', JSON.stringify(customWebsites));
+}
+
+function editCustomCategory(categoryId, updatedData) {
+        const categoryIndex = customCategories.findIndex(cat => cat.id === categoryId);
+        if (categoryIndex !== -1) {
+                customCategories[categoryIndex] = {
+                        ...customCategories[categoryIndex],
+                        ...updatedData,
+                        updatedAt: new Date().toISOString()
+                };
+                localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                return customCategories[categoryIndex];
+        }
+        return null;
+}
+
+function editCustomWebsite(websiteId, updatedData) {
+        const websiteIndex = customWebsites.findIndex(site => site.id === websiteId);
+        if (websiteIndex !== -1) {
+                customWebsites[websiteIndex] = {
+                        ...customWebsites[websiteIndex],
+                        ...updatedData,
+                        updatedAt: new Date().toISOString()
+                };
+                localStorage.setItem('customWebsites', JSON.stringify(customWebsites));
+                return customWebsites[websiteIndex];
+        }
+        return null;
+}
+
+function clearUsageStats() {
+        usageStats = {};
+        localStorage.removeItem('usageStats');
+        showNotification('Usage statistics cleared successfully!', 'success');
+}
+
+function getAllCategories() {
+        const defaultCategories = [...new Set(websiteData.map(site => site.category))];
+        const customCats = customCategories.map(cat => cat.name);
+        return [...defaultCategories, ...customCats];
+}
+
+// ========================
+// IMPORT/EXPORT FUNCTIONALITY
+// ========================
+function exportData() {
+        const exportData = {
+                customCategories: customCategories,
+                customWebsites: customWebsites,
+                recentlyVisited: recentlyVisited,
+                usageStats: usageStats,
+                theme: currentTheme,
+                background: currentBackground,
+                exportedAt: new Date().toISOString(),
+                version: '1.0'
+        };
+
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `website-shortcuts-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+
+        showNotification('Data exported successfully!', 'success');
+}
+
+function importData(file) {
+        return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                        try {
+                                const importedData = JSON.parse(e.target.result);
+
+                                // Validate data structure
+                                if (!importedData.version) {
+                                        throw new Error('Invalid file format');
+                                }
+
+                                // Import data
+                                if (importedData.customCategories) {
+                                        customCategories = [...customCategories, ...importedData.customCategories];
+                                        localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                                }
+
+                                if (importedData.customWebsites) {
+                                        customWebsites = [...customWebsites, ...importedData.customWebsites];
+                                        localStorage.setItem('customWebsites', JSON.stringify(customWebsites));
+                                }
+
+                                if (importedData.usageStats) {
+                                        // Merge usage stats
+                                        Object.keys(importedData.usageStats).forEach(key => {
+                                                if (key === 'categories') {
+                                                        if (!usageStats.categories) usageStats.categories = {};
+                                                        Object.keys(importedData.usageStats.categories).forEach(cat => {
+                                                                usageStats.categories[cat] = (usageStats.categories[cat] || 0) + importedData.usageStats.categories[cat];
+                                                        });
+                                                } else {
+                                                        if (!usageStats[key]) {
+                                                                usageStats[key] = importedData.usageStats[key];
+                                                        } else {
+                                                                usageStats[key].visits += importedData.usageStats[key].visits || 0;
+                                                        }
+                                                }
+                                        });
+                                        localStorage.setItem('usageStats', JSON.stringify(usageStats));
+                                }
+
+                                showNotification('Data imported successfully!', 'success');
+                                renderShortcuts();
+                                updateCategoryTabs();
+                                resolve(importedData);
+                        } catch (error) {
+                                showNotification('Error importing data: ' + error.message, 'error');
+                                reject(error);
+                        }
+                };
+                reader.readAsText(file);
+        });
+}
+
+// ========================
+// ENHANCED NOTIFICATION SYSTEM
+// ========================
+function showNotification(message, type = 'info', duration = 3000) {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.enhanced-notification');
+        existingNotifications.forEach(notif => notif.remove());
+
+        const notification = document.createElement('div');
+        notification.className = 'enhanced-notification';
+
+        const colors = {
+                success: '#00ff88',
+                error: '#ff4757',
+                warning: '#ffa502',
+                info: '#3742fa'
+        };
+
+        notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--card-bg);
+                backdrop-filter: blur(15px);
+                border: 1px solid ${colors[type]};
+                border-radius: 10px;
+                padding: 15px 25px;
+                color: ${colors[type]};
+                font-weight: 500;
+                box-shadow: 0 4px 15px var(--shadow-color);
+                z-index: 1001;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+                word-wrap: break-word;
+        `;
+
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+        }, 10);
+
+        // Animate out
+        setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                        if (notification.parentNode) {
+                                notification.remove();
+                        }
+                }, 300);
+        }, duration);
+}
+
+// Keyboard Navigation
+function handleKeyboardNavigation(e) {
+        updateVisibleCards();
+
+        if (visibleCards.length === 0) return;
+
+        switch (e.key) {
+                case 'ArrowRight':
+                case 'ArrowDown':
+                        e.preventDefault();
+                        focusNextCard();
+                        break;
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                        e.preventDefault();
+                        focusPreviousCard();
+                        break;
+                case 'Enter':
+                        e.preventDefault();
+                        if (focusedCardIndex >= 0 && focusedCardIndex < visibleCards.length) {
+                                const card = visibleCards[focusedCardIndex];
+                                const url = card.dataset.url;
+                                openWebsite(url, card, e);
+                        }
+                        break;
+                case 'Home':
+                        e.preventDefault();
+                        focusedCardIndex = 0;
+                        updateCardFocus();
+                        break;
+                case 'End':
+                        e.preventDefault();
+                        focusedCardIndex = visibleCards.length - 1;
+                        updateCardFocus();
+                        break;
+        }
+}
+
+function updateVisibleCards() {
+        visibleCards = Array.from(shortcutsGrid.querySelectorAll('.shortcut-card:not(.hidden)'));
+}
+
+function focusNextCard() {
+        if (focusedCardIndex < visibleCards.length - 1) {
+                focusedCardIndex++;
+        } else {
+                focusedCardIndex = 0; // Wrap to beginning
+        }
+        updateCardFocus();
+}
+
+function focusPreviousCard() {
+        if (focusedCardIndex > 0) {
+                focusedCardIndex--;
+        } else {
+                focusedCardIndex = visibleCards.length - 1; // Wrap to end
+        }
+        updateCardFocus();
+}
+
+function updateCardFocus() {
+        // Remove focus from all cards
+        visibleCards.forEach(card => card.classList.remove('keyboard-focused'));
+
+        // Add focus to current card
+        if (focusedCardIndex >= 0 && focusedCardIndex < visibleCards.length) {
+                const focusedCard = visibleCards[focusedCardIndex];
+                focusedCard.classList.add('keyboard-focused');
+
+                // Scroll into view if needed
+                focusedCard.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'nearest'
+                });
+        }
+}
+
+function clearFocus() {
+        focusedCardIndex = -1;
+        visibleCards.forEach(card => card.classList.remove('keyboard-focused'));
+}
+
+// Keyboard Help
+function toggleKeyboardHelp() {
+        keyboardTooltip.classList.toggle('show');
+}
+
 // Setup event listeners
 function setupEventListeners() {
+        // Theme toggle
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Keyboard help toggle
+        keyboardHelp.addEventListener('click', toggleKeyboardHelp);
+
+        // Close keyboard help when clicking outside
+        document.addEventListener('click', (e) => {
+                if (!keyboardHelp.contains(e.target) && !keyboardTooltip.contains(e.target)) {
+                        keyboardTooltip.classList.remove('show');
+                }
+        });
+
         // Search functionality
         searchInput.addEventListener('input', handleSearch);
         clearSearch.addEventListener('click', clearSearchInput);
@@ -1402,17 +2496,17 @@ function setupEventListeners() {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                        clearSearchInput();
-                }
                 if (e.key === '/' && !searchInput.matches(':focus')) {
                         e.preventDefault();
                         searchInput.focus();
                 }
-        });
-}
 
-// Handle search input
+                // Keyboard navigation
+                if (!searchInput.matches(':focus')) {
+                        handleKeyboardNavigation(e);
+                }
+        });
+}// Handle search input
 function handleSearch(e) {
         currentSearchTerm = e.target.value.toLowerCase().trim();
 
@@ -1446,7 +2540,24 @@ function setActiveCategory(category) {
 
 // Filter websites based on current category and search term
 function getFilteredWebsites() {
-        return websiteData.filter(website => {
+        // Combine default websites with custom websites
+        let allWebsites = [...websiteData];
+
+        // Add custom websites with proper category mapping
+        customWebsites.forEach(customSite => {
+                const category = customSite.categoryId
+                        ? customCategories.find(cat => cat.id === customSite.categoryId)?.name || 'other'
+                        : customSite.category || 'other';
+
+                allWebsites.push({
+                        ...customSite,
+                        category: category,
+                        isCustom: true
+                });
+        });
+
+        // Regular filtering
+        return allWebsites.filter(website => {
                 const matchesCategory = currentCategory === 'all' || website.category === currentCategory;
                 const matchesSearch = !currentSearchTerm ||
                         website.name.toLowerCase().includes(currentSearchTerm) ||
@@ -1461,21 +2572,44 @@ function getFilteredWebsites() {
 function createShortcutCard(website, index) {
         // Check if icon is a URL (for logos) or FontAwesome class
         const isImageIcon = website.icon.startsWith('http') || website.icon.includes('/') || website.icon.match(/\.(jpeg|jpg|png|gif|svg|ico)$/i);
-        
+
         // Create fallback icon URL using Google's favicon service
         const fallbackIcon = `https://www.google.com/s2/favicons?domain=${new URL(website.url).hostname}&sz=64`;
-        
+
         const iconHtml = isImageIcon
                 ? `<img src="${website.icon}" alt="${website.name} logo" onerror="this.src='${fallbackIcon}'; this.onerror=function(){this.src='https://via.placeholder.com/48x48/00ff88/ffffff?text=${website.name.charAt(0)}';};">`
                 : `<i class="${website.icon}"></i>`;
 
+        // Get usage statistics
+        const stats = usageStats[website.url];
+        const visitCount = stats?.visits || 0;
+        const lastVisited = stats?.lastVisited;
+
+        // Show visit count badge if there are visits
+        const visitBadge = visitCount > 0 ? `
+                <div class="visit-badge" title="Visited ${visitCount} times">
+                        <i class="fas fa-chart-line"></i>
+                        <span>${visitCount}</span>
+                </div>
+        ` : '';
+
+        // Show delete button for custom websites
+        const deleteButton = website.isCustom ? `
+                <button class="delete-custom-site" onclick="event.stopPropagation(); removeCustomWebsite('${website.id}'); renderShortcuts();" title="Delete custom website">
+                        <i class="fas fa-times"></i>
+                </button>
+        ` : '';
+
         // Remove icon background color for a clean look
         return `
-        <div class="shortcut-card" 
+        <div class="shortcut-card ${website.isCustom ? 'custom-site' : ''}" 
              data-url="${website.url}"
              style="animation-delay: ${index * 0.1}s"
              data-name="${website.name.toLowerCase()}"
-             data-category="${website.category}">
+             data-category="${website.category}"
+             data-website-id="${website.id || ''}">
+            ${visitBadge}
+            ${deleteButton}
             <div class="shortcut-icon">
                 ${iconHtml}
             </div>
@@ -1495,6 +2629,9 @@ function adjustColor(color, amount) {
 // Render shortcuts
 function renderShortcuts() {
         const filteredWebsites = getFilteredWebsites();
+
+        // Reset keyboard focus when content changes
+        clearFocus();
 
         if (filteredWebsites.length === 0) {
                 shortcutsGrid.innerHTML = `
@@ -1525,6 +2662,13 @@ function renderShortcuts() {
                         openWebsite(url, this, e);
                 });
 
+                // Add mouse enter to update focus index for keyboard navigation
+                card.addEventListener('mouseenter', () => {
+                        updateVisibleCards();
+                        focusedCardIndex = visibleCards.indexOf(card);
+                        updateCardFocus();
+                });
+
                 setTimeout(() => {
                         card.style.transition = 'all 0.5s ease';
                         card.style.opacity = '1';
@@ -1535,6 +2679,15 @@ function renderShortcuts() {
 
 // Open website in new tab
 function openWebsite(url, element, event) {
+        // Find the website data to track stats
+        const allWebsites = [...websiteData, ...customWebsites];
+        const website = allWebsites.find(site => site.url === url);
+
+        if (website) {
+                // Update usage statistics
+                updateUsageStats(website);
+        }
+
         // Add click animation
         if (element) {
                 element.style.transform = 'scale(0.95)';
@@ -1669,3 +2822,524 @@ function debounce(func, wait) {
 const debouncedSearch = debounce(handleSearch, 300);
 searchInput.removeEventListener('input', handleSearch);
 searchInput.addEventListener('input', debouncedSearch);
+
+// ========================
+// NEW FUNCTIONALITY IMPLEMENTATION
+// ========================
+
+// Initialize new features
+function initializeNewFeatures() {
+        setupModalEventListeners();
+        setupManagementTabs();
+        updateCategoryTabs();
+        populateCategorySelect();
+}
+
+// Modal Management
+function setupModalEventListeners() {
+        // Modal close functionality
+        document.querySelectorAll('.modal-close').forEach(btn => {
+                btn.addEventListener('click', closeAllModals);
+        });
+
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                                closeAllModals();
+                        }
+                });
+        });
+
+        // Form submissions
+        document.getElementById('addWebsiteForm').addEventListener('submit', handleAddWebsite);
+        document.getElementById('addCategoryForm').addEventListener('submit', handleAddCategory);
+        document.getElementById('editWebsiteForm').addEventListener('submit', handleEditWebsite);
+        document.getElementById('editCategoryForm').addEventListener('submit', handleEditCategory);
+
+        // Clear data buttons
+        document.getElementById('clearStatsBtn').addEventListener('click', () => {
+                clearUsageStats();
+                closeAllModals();
+        });
+        document.getElementById('clearAllCustomBtn').addEventListener('click', () => {
+                clearAllCustomContent();
+                closeAllModals();
+        });
+
+        // Import/Export buttons
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('importBtn').addEventListener('click', () => {
+                document.getElementById('importFile').click();
+        });
+        document.getElementById('importFile').addEventListener('change', handleImportFile);
+}
+
+function setupManagementTabs() {
+        document.getElementById('addWebsiteTab').addEventListener('click', () => {
+                showModal('addWebsiteModal');
+        });
+
+        document.getElementById('addCategoryTab').addEventListener('click', () => {
+                showModal('addCategoryModal');
+        });
+
+        document.getElementById('statsTab').addEventListener('click', () => {
+                updateStatsModal();
+                showModal('statsModal');
+        });
+
+        document.getElementById('importExportTab').addEventListener('click', () => {
+                showModal('importExportModal');
+        });
+
+        document.getElementById('editCustomTab').addEventListener('click', () => {
+                populateEditCustomModal();
+                showModal('editCustomModal');
+        });
+
+        document.getElementById('clearDataTab').addEventListener('click', () => {
+                showModal('clearDataModal');
+        });
+}
+
+function showModal(modalId) {
+        closeAllModals();
+        const modal = document.getElementById(modalId);
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+}
+
+function closeAllModals() {
+        document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+        });
+}
+
+// Add Website Functionality
+function handleAddWebsite(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('websiteName').value.trim();
+        const url = document.getElementById('websiteUrl').value.trim();
+        const description = document.getElementById('websiteDescription').value.trim();
+        const icon = document.getElementById('websiteIcon').value.trim();
+        const category = document.getElementById('websiteCategory').value;
+        const color = document.getElementById('websiteColor').value;
+
+        if (!name || !url || !description) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+        }
+
+        // Validate URL
+        try {
+                new URL(url);
+        } catch {
+                showNotification('Please enter a valid URL', 'error');
+                return;
+        }
+
+        const website = {
+                name: name,
+                url: url,
+                description: description,
+                icon: icon || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`,
+                category: category,
+                color: color
+        };
+
+        const categoryId = customCategories.find(cat => cat.name === category)?.id || null;
+        addCustomWebsite(website, categoryId);
+
+        // Reset form and close modal
+        e.target.reset();
+        closeAllModals();
+        renderShortcuts();
+        showNotification('Website added successfully!', 'success');
+}
+
+// Add Category Functionality
+function handleAddCategory(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('categoryName').value.trim();
+        const color = document.getElementById('categoryColor').value;
+
+        if (!name) {
+                showNotification('Please enter a category name', 'error');
+                return;
+        }
+
+        // Check if category already exists
+        const existingCategories = getAllCategories();
+        if (existingCategories.includes(name.toLowerCase())) {
+                showNotification('Category already exists', 'error');
+                return;
+        }
+
+        addCustomCategory(name, color);
+
+        // Reset form and close modal
+        e.target.reset();
+        closeAllModals();
+        updateCategoryTabs();
+        populateCategorySelect();
+        showNotification('Category added successfully!', 'success');
+}
+
+// Update category tabs to include custom categories
+function updateCategoryTabs() {
+        const categoryTabsContainer = document.querySelector('.category-tabs');
+
+        // Get existing tabs (not custom ones)
+        const existingTabs = Array.from(categoryTabsContainer.children).filter(tab =>
+                !tab.classList.contains('custom-category-tab')
+        );
+
+        // Add custom category tabs
+        customCategories.forEach(category => {
+                const existingTab = Array.from(categoryTabsContainer.children).find(tab =>
+                        tab.dataset.category === category.name
+                );
+
+                if (!existingTab) {
+                        const tab = document.createElement('button');
+                        tab.className = 'category-tab custom-category-tab';
+                        tab.dataset.category = category.name;
+                        tab.innerHTML = `
+                                <i class="fas fa-tag" style="color: ${category.color}"></i>
+                                ${category.displayName}
+                        `;
+
+                        tab.addEventListener('click', () => {
+                                setActiveCategory(category.name);
+                                currentCategory = category.name;
+                                renderShortcuts();
+                        });
+
+                        categoryTabsContainer.appendChild(tab);
+                }
+        });
+}
+
+// Populate category select in add website form
+function populateCategorySelect() {
+        const select = document.getElementById('websiteCategory');
+        const currentValue = select.value;
+
+        // Clear existing options except 'other'
+        select.innerHTML = '<option value="other">Other</option>';
+
+        // Add default categories
+        const defaultCategories = [...new Set(websiteData.map(site => site.category))];
+        defaultCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                select.appendChild(option);
+        });
+
+        // Add custom categories
+        customCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.name;
+                option.textContent = category.displayName;
+                select.appendChild(option);
+        });
+
+        // Restore previous value if it exists
+        if (currentValue && Array.from(select.options).some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
+        }
+}
+
+// Update statistics modal
+function updateStatsModal() {
+        // Most visited sites
+        const mostVisited = getMostVisitedSites(10);
+        const mostVisitedList = document.getElementById('mostVisitedList');
+
+        if (mostVisited.length === 0) {
+                mostVisitedList.innerHTML = '<p>No visit data available yet.</p>';
+        } else {
+                mostVisitedList.innerHTML = mostVisited.map(site => `
+                        <div class="stats-item">
+                                <span class="stats-item-name">${site.name}</span>
+                                <span class="stats-item-value">${site.visits} visits</span>
+                        </div>
+                `).join('');
+        }
+
+        // Category usage
+        const categoryUsage = getMostUsedCategories();
+        const categoryUsageList = document.getElementById('categoryUsageList');
+
+        if (categoryUsage.length === 0) {
+                categoryUsageList.innerHTML = '<p>No category data available yet.</p>';
+        } else {
+                categoryUsageList.innerHTML = categoryUsage.map(cat => `
+                        <div class="stats-item">
+                                <span class="stats-item-name">${cat.category}</span>
+                                <span class="stats-item-value">${cat.count} visits</span>
+                        </div>
+                `).join('');
+        }
+}
+
+// Handle file import
+function handleImportFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        importData(file).then(() => {
+                closeAllModals();
+                updateCategoryTabs();
+                populateCategorySelect();
+        }).catch(error => {
+                console.error('Import error:', error);
+        });
+
+        // Clear the file input
+        e.target.value = '';
+}
+
+// Add keyboard shortcuts for new features
+function addNewKeyboardShortcuts() {
+        // No additional keyboard shortcuts - removed per user request
+}
+
+// Update the keyboard help tooltip to include new shortcuts
+function updateKeyboardHelp() {
+        // No additional keyboard shortcuts to add - removed per user request
+}
+
+// ========================
+// EDIT CUSTOM CONTENT FUNCTIONALITY
+// ========================
+
+function populateEditCustomModal() {
+        populateCustomCategoriesList();
+        populateCustomWebsitesList();
+}
+
+function populateCustomCategoriesList() {
+        const container = document.getElementById('customCategoriesList');
+
+        if (customCategories.length === 0) {
+                container.innerHTML = '<div class="no-items-message">No custom categories found.</div>';
+                return;
+        }
+
+        container.innerHTML = customCategories.map(category => `
+                <div class="edit-item">
+                        <div class="edit-item-info">
+                                <div class="edit-item-name">${category.displayName}</div>
+                                <div class="edit-item-details">
+                                        <span style="color: ${category.color}">●</span> Created: ${new Date(category.createdAt).toLocaleDateString()}
+                                </div>
+                        </div>
+                        <div class="edit-item-actions">
+                                <button class="btn-edit" onclick="openEditCategoryModal('${category.id}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn-delete" onclick="deleteCustomCategory('${category.id}')">
+                                        <i class="fas fa-trash"></i> Delete
+                                </button>
+                        </div>
+                </div>
+        `).join('');
+}
+
+function populateCustomWebsitesList() {
+        const container = document.getElementById('customWebsitesList');
+
+        if (customWebsites.length === 0) {
+                container.innerHTML = '<div class="no-items-message">No custom websites found.</div>';
+                return;
+        }
+
+        container.innerHTML = customWebsites.map(website => {
+                const category = customCategories.find(cat => cat.id === website.categoryId);
+                const categoryName = category ? category.displayName : 'Other';
+
+                return `
+                        <div class="edit-item">
+                                <div class="edit-item-info">
+                                        <div class="edit-item-name">${website.name}</div>
+                                        <div class="edit-item-details">
+                                                Category: ${categoryName} | Created: ${new Date(website.createdAt).toLocaleDateString()}
+                                        </div>
+                                </div>
+                                <div class="edit-item-actions">
+                                        <button class="btn-edit" onclick="openEditWebsiteModal('${website.id}')">
+                                                <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn-delete" onclick="deleteCustomWebsite('${website.id}')">
+                                                <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                </div>
+                        </div>
+                `;
+        }).join('');
+}
+
+function openEditCategoryModal(categoryId) {
+        const category = customCategories.find(cat => cat.id === categoryId);
+        if (!category) return;
+
+        document.getElementById('editCategoryId').value = categoryId;
+        document.getElementById('editCategoryName').value = category.name;
+        document.getElementById('editCategoryColor').value = category.color;
+
+        closeAllModals();
+        showModal('editCategoryModal');
+}
+
+function openEditWebsiteModal(websiteId) {
+        const website = customWebsites.find(site => site.id === websiteId);
+        if (!website) return;
+
+        document.getElementById('editWebsiteId').value = websiteId;
+        document.getElementById('editWebsiteName').value = website.name;
+        document.getElementById('editWebsiteUrl').value = website.url;
+        document.getElementById('editWebsiteDescription').value = website.description;
+        document.getElementById('editWebsiteIcon').value = website.icon || '';
+        document.getElementById('editWebsiteColor').value = website.color;
+
+        // Populate category select for edit form
+        populateEditWebsiteCategorySelect();
+        document.getElementById('editWebsiteCategory').value = website.categoryId || 'other';
+
+        closeAllModals();
+        showModal('editWebsiteModal');
+}
+
+function populateEditWebsiteCategorySelect() {
+        const select = document.getElementById('editWebsiteCategory');
+        select.innerHTML = '<option value="other">Other</option>';
+
+        // Add default categories
+        const defaultCategories = [...new Set(websiteData.map(site => site.category))];
+        defaultCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                select.appendChild(option);
+        });
+
+        // Add custom categories
+        customCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.displayName;
+                select.appendChild(option);
+        });
+}
+
+function handleEditCategory(e) {
+        e.preventDefault();
+
+        const categoryId = document.getElementById('editCategoryId').value;
+        const name = document.getElementById('editCategoryName').value.trim();
+        const color = document.getElementById('editCategoryColor').value;
+
+        if (!name) {
+                showNotification('Please enter a category name', 'error');
+                return;
+        }
+
+        const updatedData = {
+                name: name.toLowerCase(),
+                displayName: name,
+                color: color
+        };
+
+        const updatedCategory = editCustomCategory(categoryId, updatedData);
+        if (updatedCategory) {
+                closeAllModals();
+                updateCategoryTabs();
+                populateCategorySelect();
+                renderShortcuts();
+                showNotification('Category updated successfully!', 'success');
+        } else {
+                showNotification('Failed to update category', 'error');
+        }
+}
+
+function handleEditWebsite(e) {
+        e.preventDefault();
+
+        const websiteId = document.getElementById('editWebsiteId').value;
+        const name = document.getElementById('editWebsiteName').value.trim();
+        const url = document.getElementById('editWebsiteUrl').value.trim();
+        const description = document.getElementById('editWebsiteDescription').value.trim();
+        const icon = document.getElementById('editWebsiteIcon').value.trim();
+        const categoryId = document.getElementById('editWebsiteCategory').value;
+        const color = document.getElementById('editWebsiteColor').value;
+
+        if (!name || !url || !description) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+        }
+
+        // Validate URL
+        try {
+                new URL(url);
+        } catch {
+                showNotification('Please enter a valid URL', 'error');
+                return;
+        }
+
+        const updatedData = {
+                name,
+                url,
+                description,
+                icon: icon || null,
+                categoryId: categoryId === 'other' ? null : categoryId,
+                color
+        };
+
+        const updatedWebsite = editCustomWebsite(websiteId, updatedData);
+        if (updatedWebsite) {
+                closeAllModals();
+                renderShortcuts();
+                showNotification('Website updated successfully!', 'success');
+        } else {
+                showNotification('Failed to update website', 'error');
+        }
+}
+
+function deleteCustomCategory(categoryId) {
+        if (confirm('Are you sure you want to delete this category? All websites in this category will also be removed.')) {
+                removeCustomCategory(categoryId);
+                populateEditCustomModal();
+                updateCategoryTabs();
+                populateCategorySelect();
+                renderShortcuts();
+                showNotification('Category deleted successfully!', 'success');
+        }
+}
+
+function deleteCustomWebsite(websiteId) {
+        if (confirm('Are you sure you want to delete this website?')) {
+                removeCustomWebsite(websiteId);
+                populateEditCustomModal();
+                renderShortcuts();
+                showNotification('Website deleted successfully!', 'success');
+        }
+}
+
+function clearAllCustomContent() {
+        if (confirm('Are you sure you want to delete ALL custom categories and websites? This action cannot be undone!')) {
+                customCategories = [];
+                customWebsites = [];
+                localStorage.removeItem('customCategories');
+                localStorage.removeItem('customWebsites');
+                updateCategoryTabs();
+                populateCategorySelect();
+                renderShortcuts();
+                showNotification('All custom content cleared successfully!', 'success');
+        }
+}
